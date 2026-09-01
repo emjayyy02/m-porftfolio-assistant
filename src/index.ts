@@ -697,7 +697,7 @@ function getMaxResponseTokens(
 
 
 	return detailedRequest
-		? 256
+		? 512
 		: 128;
 }
 
