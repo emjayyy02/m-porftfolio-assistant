@@ -20,12 +20,10 @@ const MAX_MESSAGES = 10;
 const MAX_MESSAGE_LENGTH = 750;
 
 const ALLOWED_ORIGINS = [
-	// Replace this later with your real deployed portfolio origin.
-	"https://YOUR-PORTFOLIO-DOMAIN.com",
+	"https://marvinsilverio.vercel.app",
 
-	// Local development.
-	"http://localhost:5500",
-	"http://127.0.0.1:5500",
+	"http://localhost:5173",
+	"http://127.0.0.1:5173",
 ];
 
 
