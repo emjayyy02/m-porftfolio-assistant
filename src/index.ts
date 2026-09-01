@@ -118,7 +118,10 @@ async function handleChatRequest(
 			body === null ||
 			!("messages" in body)
 		) {
-			return jsonError("Request body must contain a messages array.", 400);
+			return jsonError(
+				"Request body must contain a messages array.",
+				400,
+			);
 		}
 
 		const { messages } = body as {
@@ -154,7 +157,10 @@ async function handleChatRequest(
 				typeof message !== "object" ||
 				message === null
 			) {
-				return jsonError("Each message must be an object.", 400);
+				return jsonError(
+					"Each message must be an object.",
+					400,
+				);
 			}
 
 			const { role, content } = message as {
@@ -162,7 +168,6 @@ async function handleChatRequest(
 				content?: unknown;
 			};
 
-			// Only client-safe roles are accepted.
 			// System messages are owned by the backend.
 			if (role !== "user" && role !== "assistant") {
 				return jsonError(
@@ -200,12 +205,13 @@ async function handleChatRequest(
 			});
 		}
 
-		// 5. Backend always owns the system prompt
+		// 5. Backend owns the system prompt
 		safeMessages.unshift({
 			role: "system",
 			content: FULL_SYSTEM_PROMPT,
 		});
 
+		// 6. Send validated messages to Workers AI
 		const inputs = {
 			messages: safeMessages,
 			max_tokens: 1024,
@@ -217,6 +223,7 @@ async function handleChatRequest(
 			inputs,
 		);
 
+		// 7. Stream AI response back to frontend
 		return new Response(stream, {
 			headers: {
 				"content-type": "text/event-stream; charset=utf-8",
@@ -230,7 +237,9 @@ async function handleChatRequest(
 		return jsonError("Failed to process request.", 500);
 	}
 }
-		/**
+
+
+/**
  * Returns a JSON error response.
  */
 function jsonError(message: string, status: number): Response {
