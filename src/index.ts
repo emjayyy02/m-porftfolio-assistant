@@ -531,6 +531,43 @@ async function handleChatRequest(
 	}
 }
 
+async function checkChatRateLimit(
+	request: Request,
+	env: Env,
+): Promise<Response | null> {
+
+	const clientIp =
+		request.headers.get("CF-Connecting-IP") ??
+		"unknown";
+
+	const clientResult =
+		await env.CHAT_CLIENT_RATE_LIMITER.limit({
+			key: `chat-client:${clientIp}`,
+		});
+
+	if (!clientResult.success) {
+		return jsonError(
+			"Too many requests. Please wait a moment and try again.",
+			429,
+			request,
+		);
+	}
+
+	const globalResult =
+		await env.CHAT_GLOBAL_RATE_LIMITER.limit({
+			key: "portfolio-chat",
+		});
+
+	if (!globalResult.success) {
+		return jsonError(
+			"M is a little busy right now. Please try again shortly.",
+			429,
+			request,
+		);
+	}
+
+	return null;
+}
 
 // --------------------------------------------------
 // JSON ERROR HELPER
