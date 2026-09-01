@@ -12,6 +12,9 @@ export interface Env {
 	 * Binding for static assets.
 	 */
 	ASSETS: { fetch: (request: Request) => Promise<Response> };
+
+	CHAT_CLIENT_RATE_LIMITER: RateLimit
+  	CHAT_GLOBAL_RATE_LIMITER: RateLimit
 }
 
 /**
