@@ -1,40 +1,52 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "llm-chat-app-template",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-	"assets": {
-		"binding": "ASSETS",
-		"directory": "./public"
-	},
-	"observability": {
-		"enabled": true
-	},
-	"ai": {
-		"binding": "AI"
-	},
-"ratelimits": [
-  {
-    "name": "CHAT_CLIENT_RATE_LIMITER",
-    "namespace_id": "1001",
-    "simple": {
-      "limit": 20,
-      "period": 60
-    }
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "llm-chat-app-template",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./public"
   },
-  {
-    "name": "CHAT_GLOBAL_RATE_LIMITER",
-    "namespace_id": "1002",
-    "simple": {
-      "limit": 100,
-      "period": 60
+
+  "observability": {
+    "enabled": true
+  },
+
+  "ai": {
+    "binding": "AI"
+  },
+
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.md"],
+      "fallthrough": true
     }
-  }
-],
-	"upload_source_maps": true
+  ],
+
+  "ratelimits": [
+    {
+      "name": "CHAT_CLIENT_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "CHAT_GLOBAL_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 100,
+        "period": 60
+      }
+    }
+  ],
+
+  "upload_source_maps": true
 }
