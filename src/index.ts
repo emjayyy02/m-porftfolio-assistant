@@ -712,7 +712,7 @@ function getMaxResponseTokens(
 			.test(message);
 
 	if (technicalRequest) {
-		return 256;
+		return 320;
 	}
 
 
