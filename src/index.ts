@@ -4,6 +4,8 @@
  * @license MIT
  */
 
+// M Portfolio Assistant V1
+
 import { Env, ChatMessage } from "./types";
 
 import assistantRules from "../docs/assistant-rules.md";
