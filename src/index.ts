@@ -110,18 +110,101 @@ async function handleChatRequest(
 	env: Env,
 ): Promise<Response> {
 	try {
-		// Parse JSON request body
-	const { messages = [] } = (await request.json()) as {
-	messages: ChatMessage[];
-};
-		
-	const safeMessages = messages.filter(
-	(msg) => msg.role !== "system"
-);
+		const body = await request.json();
+
+		// 1. Validate top-level body
+		if (
+			typeof body !== "object" ||
+			body === null ||
+			!("messages" in body)
+		) {
+			return jsonError("Request body must contain a messages array.", 400);
+		}
+
+		const { messages } = body as {
+			messages: unknown;
+		};
+
+		// 2. Validate messages container
+		if (!Array.isArray(messages)) {
+			return jsonError("messages must be an array.", 400);
+		}
+
+		// 3. Limit conversation size
+		const MAX_MESSAGES = 10;
+
+		if (messages.length === 0) {
+			return jsonError("messages cannot be empty.", 400);
+		}
+
+		if (messages.length > MAX_MESSAGES) {
+			return jsonError(
+				`Conversation cannot exceed ${MAX_MESSAGES} messages.`,
+				400,
+			);
+		}
+
+		const MAX_MESSAGE_LENGTH = 750;
+
+		const safeMessages: ChatMessage[] = [];
+
+		// 4. Validate every message
+		for (const message of messages) {
+			if (
+				typeof message !== "object" ||
+				message === null
+			) {
+				return jsonError("Each message must be an object.", 400);
+			}
+
+			const { role, content } = message as {
+				role?: unknown;
+				content?: unknown;
+			};
+
+			// Only client-safe roles are accepted.
+			// System messages are owned by the backend.
+			if (role !== "user" && role !== "assistant") {
+				return jsonError(
+					"Message role must be user or assistant.",
+					400,
+				);
+			}
+
+			if (typeof content !== "string") {
+				return jsonError(
+					"Message content must be a string.",
+					400,
+				);
+			}
+
+			const trimmedContent = content.trim();
+
+			if (trimmedContent.length === 0) {
+				return jsonError(
+					"Message content cannot be empty.",
+					400,
+				);
+			}
+
+			if (trimmedContent.length > MAX_MESSAGE_LENGTH) {
+				return jsonError(
+					`Each message cannot exceed ${MAX_MESSAGE_LENGTH} characters.`,
+					400,
+				);
+			}
+
+			safeMessages.push({
+				role,
+				content: trimmedContent,
+			});
+		}
+
+		// 5. Backend always owns the system prompt
 		safeMessages.unshift({
 			role: "system",
-			content: FULL_SYSTEM_PROMPT
-});
+			content: FULL_SYSTEM_PROMPT,
+		});
 
 		const inputs = {
 			messages: safeMessages,
@@ -129,6 +212,24 @@ async function handleChatRequest(
 			stream: true,
 		} satisfies AiTextGenerationInput & { stream: true };
 
+		const stream = await env.AI.run<typeof MODEL_ID>(
+			MODEL_ID,
+			inputs,
+		);
+
+		return new Response(stream, {
+			headers: {
+				"content-type": "text/event-stream; charset=utf-8",
+				"cache-control": "no-cache",
+				connection: "keep-alive",
+			},
+		});
+	} catch (error) {
+		console.error("Error processing chat request:", error);
+
+		return jsonError("Failed to process request.", 500);
+	}
+}
 		const stream = await env.AI.run<typeof MODEL_ID>(MODEL_ID, inputs, {
 			// Uncomment to use AI Gateway
 			// gateway: {
@@ -145,14 +246,16 @@ async function handleChatRequest(
 				connection: "keep-alive",
 			},
 		});
-	} catch (error) {
-		console.error("Error processing chat request:", error);
-		return new Response(
-			JSON.stringify({ error: "Failed to process request" }),
-			{
-				status: 500,
-				headers: { "content-type": "application/json" },
+	function jsonError(message: string, status: number): Response {
+	return new Response(
+		JSON.stringify({
+			error: message,
+		}),
+		{
+			status,
+			headers: {
+				"content-type": "application/json",
 			},
-		);
-	}
+		},
+	);
 }
