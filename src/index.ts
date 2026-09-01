@@ -22,6 +22,7 @@ const MAX_MESSAGE_LENGTH = 750;
 const ALLOWED_ORIGINS = [
 	"https://marvinsilverio.vercel.app",
 
+	// Local development
 	"http://localhost:5173",
 	"http://127.0.0.1:5173",
 ];
@@ -235,26 +236,27 @@ export default {
 			}
 
 
-			// Chat request
+			// Actual chat request
 			if (request.method === "POST") {
 
 				if (!isOriginAllowed(request)) {
 					return jsonError(
-					"Origin not allowed.",
-					403,
-					request,
-				);
+						"Origin not allowed.",
+						403,
+						request,
+					);
+				}
+
+				/*
+					Rate limiting is intentionally NOT performed here.
+
+					We first validate the request inside
+					handleChatRequest() so malformed requests do not
+					consume rate-limit counters.
+				*/
+				return handleChatRequest(request, env);
 			}
 
-			const rateLimitResponse =
-			await checkChatRateLimit(request, env);
-
-			if (rateLimitResponse) {
-				return rateLimitResponse;
-	}
-
-				return handleChatRequest(request, env);
-	}
 
 			// Everything except POST / OPTIONS
 			return new Response(
@@ -270,7 +272,9 @@ export default {
 		// Unknown API route
 		return new Response(
 			"Not found",
-			{ status: 404 },
+			{
+				status: 404,
+			},
 		);
 	},
 
@@ -286,23 +290,30 @@ async function handleChatRequest(
 	env: Env,
 ): Promise<Response> {
 
+	// ----------------------------------------------
+	// 1. CONTENT TYPE
+	// ----------------------------------------------
+
 	const contentType =
 		request.headers.get("Content-Type") ?? "";
 
-		if (!contentType
-		.toLowerCase()
-		.startsWith("application/json")) {
-
+	if (
+		!contentType
+			.toLowerCase()
+			.startsWith("application/json")
+	) {
 		return jsonError(
 			"Content-Type must be application/json.",
 			415,
 			request,
 		);
-}
+	}
+
+
 	try {
 
 		// ----------------------------------------------
-		// 1. READ RAW BODY
+		// 2. READ RAW BODY
 		// ----------------------------------------------
 
 		let rawBody: string;
@@ -319,7 +330,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 2. BODY SIZE LIMIT
+		// 3. BODY SIZE LIMIT
 		// ----------------------------------------------
 
 		const bodySize =
@@ -335,7 +346,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 3. PARSE JSON
+		// 4. PARSE JSON
 		// ----------------------------------------------
 
 		let body: unknown;
@@ -352,7 +363,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 4. VALIDATE TOP-LEVEL BODY
+		// 5. VALIDATE TOP-LEVEL BODY
 		// ----------------------------------------------
 
 		if (
@@ -374,7 +385,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 5. VALIDATE MESSAGES ARRAY
+		// 6. VALIDATE MESSAGES ARRAY
 		// ----------------------------------------------
 
 		if (!Array.isArray(messages)) {
@@ -405,7 +416,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 6. VALIDATE INDIVIDUAL MESSAGES
+		// 7. VALIDATE INDIVIDUAL MESSAGES
 		// ----------------------------------------------
 
 		const safeMessages: ChatMessage[] = [];
@@ -430,7 +441,11 @@ async function handleChatRequest(
 			};
 
 
-			// The frontend can never provide system messages.
+			/*
+				Client may only send user/assistant roles.
+
+				System prompts are owned exclusively by the Worker.
+			*/
 			if (
 				role !== "user" &&
 				role !== "assistant"
@@ -484,7 +499,29 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 7. BACKEND-OWNED SYSTEM PROMPT
+		// 8. RATE LIMIT
+		// ----------------------------------------------
+
+		/*
+			Important:
+
+			Only valid chat requests reach the rate limiter.
+
+			This prevents malformed JSON, invalid roles,
+			empty messages, etc. from unnecessarily consuming
+			the AI abuse-protection quota.
+		*/
+
+		const rateLimitResponse =
+			await checkChatRateLimit(request, env);
+
+		if (rateLimitResponse) {
+			return rateLimitResponse;
+		}
+
+
+		// ----------------------------------------------
+		// 9. BACKEND-OWNED SYSTEM PROMPT
 		// ----------------------------------------------
 
 		safeMessages.unshift({
@@ -494,7 +531,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 8. PREPARE AI INPUT
+		// 10. PREPARE AI INPUT
 		// ----------------------------------------------
 
 		const inputs = {
@@ -507,7 +544,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 9. CALL WORKERS AI
+		// 11. CALL WORKERS AI
 		// ----------------------------------------------
 
 		const stream =
@@ -518,7 +555,7 @@ async function handleChatRequest(
 
 
 		// ----------------------------------------------
-		// 10. RETURN STREAM
+		// 12. RETURN SSE STREAM
 		// ----------------------------------------------
 
 		return new Response(stream, {
@@ -550,19 +587,38 @@ async function handleChatRequest(
 	}
 }
 
+
+// --------------------------------------------------
+// RATE LIMITING
+// --------------------------------------------------
+
 async function checkChatRateLimit(
 	request: Request,
 	env: Env,
 ): Promise<Response | null> {
 
+	/*
+		Cloudflare provides the visitor IP when running
+		through its network.
+
+		The fallback is mainly useful during local/manual
+		development environments where the Cloudflare
+		header may not exist.
+	*/
 	const clientIp =
 		request.headers.get("CF-Connecting-IP") ??
-		"unknown";
+		"local-development";
+
+
+	// ----------------------------------------------
+	// PER-CLIENT LIMIT
+	// ----------------------------------------------
 
 	const clientResult =
 		await env.CHAT_CLIENT_RATE_LIMITER.limit({
 			key: `chat-client:${clientIp}`,
 		});
+
 
 	if (!clientResult.success) {
 		return jsonError(
@@ -572,10 +628,16 @@ async function checkChatRateLimit(
 		);
 	}
 
+
+	// ----------------------------------------------
+	// BROADER CHATBOT LIMIT
+	// ----------------------------------------------
+
 	const globalResult =
 		await env.CHAT_GLOBAL_RATE_LIMITER.limit({
 			key: "portfolio-chat",
 		});
+
 
 	if (!globalResult.success) {
 		return jsonError(
@@ -585,8 +647,10 @@ async function checkChatRateLimit(
 		);
 	}
 
+
 	return null;
 }
+
 
 // --------------------------------------------------
 // JSON ERROR HELPER
@@ -627,6 +691,7 @@ function getCorsHeaders(
 
 	const origin =
 		request.headers.get("Origin");
+
 
 	if (!origin) {
 		return {};
@@ -674,10 +739,14 @@ function isOriginAllowed(
 
 
 	/*
-	Requests without Origin may come from:
-	- curl
-	- Postman
-	- server-to-server clients
+		Requests without an Origin header may come from:
+
+		- curl
+		- server-to-server clients
+		- API testing tools
+
+		CORS is a browser security mechanism, so those requests
+		are allowed through this specific check.
 	*/
 	if (!origin) {
 		return true;
