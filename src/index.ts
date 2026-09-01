@@ -30,6 +30,9 @@ const ALLOWED_ORIGINS = [
 	"http://127.0.0.1:5173",
 ];
 
+const responseContract =
+	getResponseContract(latestUserMessage);
+
 
 // --------------------------------------------------
 // ASSISTANT PROMPT
@@ -475,13 +478,20 @@ async function handleChatRequest(
 		// 13. BACKEND-OWNED SYSTEM PROMPT
 		// ----------------------------------------------
 
+		const responseContract =
+			getResponseContract(latestUserMessage);
+
 		const modelMessages: ChatMessage[] = [
-			{
-				role: "system",
-				content: FULL_SYSTEM_PROMPT,
-			},
-			...modelConversation,
-		];
+	{
+			role: "system",
+			content: `
+				${FULL_SYSTEM_PROMPT}
+
+				${responseContract}
+				`,
+					},
+					...modelConversation,
+	];
 
 
 		// ----------------------------------------------
@@ -692,7 +702,7 @@ function getMaxResponseTokens(
 			.test(message);
 
 	if (detailedRequest) {
-		return 512;
+		return 384;
 	}
 
 
@@ -705,7 +715,7 @@ function getMaxResponseTokens(
 			.test(message);
 
 	if (technicalRequest) {
-		return 384;
+		return 320;
 	}
 
 
@@ -857,6 +867,60 @@ function jsonError(
 	);
 }
 
+
+function getResponseContract(
+	message: string,
+): string {
+
+	const comparisonRequest =
+		/\b(compare|comparison|difference|different|versus|vs\.?)\b/i
+			.test(message);
+
+	if (comparisonRequest) {
+		return `
+RESPONSE CONTRACT:
+This is a comparison.
+
+- Maximum 3 short sentences OR 2 compact bullet points.
+- Give each compared project only one sentence.
+- Focus only on the biggest differences.
+- Do not list every feature.
+- Do not turn this into a detailed project breakdown.
+`;
+	}
+
+
+	const detailedRequest =
+		/\b(detail|detailed|breakdown|architecture|step[- ]?by[- ]?step|how does|how did|how it works|technical explanation|technical depth|explain in depth|deep dive)\b/i
+			.test(message);
+
+	if (detailedRequest) {
+		return `
+RESPONSE CONTRACT:
+This is a detailed technical question, but the answer must remain compact.
+
+- Maximum 6 major steps or sections.
+- ONE sentence maximum per step.
+- Include only the most important architecture.
+- Combine closely related workflow stages.
+- No sub-bullets.
+- No long introduction.
+- No repeated conclusion.
+- Do not describe every node, field, or implementation detail unless specifically requested.
+`;
+	}
+
+
+	return `
+RESPONSE CONTRACT:
+Keep the answer compact.
+
+- Maximum 3 sentences.
+- Prefer 1-2 sentences.
+- Answer immediately.
+- Mention only information necessary to answer the question.
+`;
+}
 
 // --------------------------------------------------
 // CORS
