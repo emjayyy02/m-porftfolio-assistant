@@ -23,7 +23,7 @@
     "name": "CHAT_CLIENT_RATE_LIMITER",
     "namespace_id": "1001",
     "simple": {
-      "limit": 20,
+      "limit": 3,
       "period": 60
     }
   },
