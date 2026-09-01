@@ -62,6 +62,14 @@ stores invoices, routes cases, handles HTTP delivery,
 retries temporary failures, and logs technical errors.
 `;
 
+const FULL_SYSTEM_PROMPT = `
+${SYSTEM_PROMPT}
+
+PORTFOLIO CONTEXT:
+
+${PORTFOLIO_CONTEXT}
+`;
+
 export default {
 	/**
 	 * Main request handler for the Worker
@@ -109,7 +117,7 @@ async function handleChatRequest(
 
 		// Add system prompt if not present
 		if (!messages.some((msg) => msg.role === "system")) {
-			messages.unshift({ role: "system", content: SYSTEM_PROMPT });
+			messages.unshift({ role: "system", content: FULL_SYSTEM_PROMPT });
 		}
 
 		const inputs = {
