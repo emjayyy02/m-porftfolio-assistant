@@ -230,23 +230,10 @@ async function handleChatRequest(
 		return jsonError("Failed to process request.", 500);
 	}
 }
-		const stream = await env.AI.run<typeof MODEL_ID>(MODEL_ID, inputs, {
-			// Uncomment to use AI Gateway
-			// gateway: {
-			//   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-			//   skipCache: false,      // Set to true to bypass cache
-			//   cacheTtl: 3600,        // Cache time-to-live in seconds
-			// },
-		});
-
-		return new Response(stream, {
-			headers: {
-				"content-type": "text/event-stream; charset=utf-8",
-				"cache-control": "no-cache",
-				connection: "keep-alive",
-			},
-		});
-	function jsonError(message: string, status: number): Response {
+		/**
+ * Returns a JSON error response.
+ */
+function jsonError(message: string, status: number): Response {
 	return new Response(
 		JSON.stringify({
 			error: message,
