@@ -286,6 +286,19 @@ async function handleChatRequest(
 	env: Env,
 ): Promise<Response> {
 
+	const contentType =
+		request.headers.get("Content-Type") ?? "";
+
+		if (!contentType
+		.toLowerCase()
+		.startsWith("application/json")) {
+
+		return jsonError(
+			"Content-Type must be application/json.",
+			415,
+			request,
+		);
+}
 	try {
 
 		// ----------------------------------------------
