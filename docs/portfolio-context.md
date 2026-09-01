@@ -1,85 +1,157 @@
 # Marvin Silverio — Portfolio Knowledge
 
-## Identity
+This file contains factual information M may use when answering visitors.
 
-Name: Marvin Silverio
+Do not treat every listed technology as expert-level mastery.
 
-Preferred name: Mj
+Do not invent professional experience, employment, clients, certifications, results, or achievements that are not explicitly documented here.
 
-Marvin is currently building toward professional work in automation and software.
 
-His current career direction is:
+# Identity
 
-Tech VA → Automation Specialist → AI Automation Specialist
+Marvin Silverio goes by Mj.
 
-Long term, he wants to grow deeper into:
+He is building toward professional work as a:
+
+Tech VA
+→ Automation Specialist
+→ AI Automation Specialist
+
+His longer-term direction includes:
 
 - automation engineering
 - full-stack web development
 - software engineering
 - systems design
 
-He prefers building practical systems rather than only visual websites.
+His broader goal is not simply to collect tools.
 
-His projects often combine frontend development, APIs, automation workflows, validation, reliability, and AI-assisted systems.
+He wants to become someone who can receive a messy business problem, understand the process, identify what can be automated, understand how data moves, account for failure cases, and build a useful system around it.
 
----
 
-# Technical Skills
+# Technical Direction
 
-## Frontend
+Mj's work currently sits around three broad areas:
+
+## Build
+
+Creating websites, interfaces, and web applications.
+
+## Connect
+
+Connecting systems using:
+
+- APIs
+- webhooks
+- automation workflows
+- external services
+- business integrations
+
+## Think
+
+Building toward:
+
+- AI-assisted workflows
+- structured AI outputs
+- intelligent routing
+- assistants
+- eventually more advanced AI automation systems
+
+
+# Technical Foundation
+
+Technologies and concepts Mj has worked with include:
+
+## Web Development
 
 - HTML
 - CSS
-- responsive web development
+- responsive web design
 - JavaScript
+- DOM manipulation
+- forms and validation
+- application state
+- Local Storage
+- modular JavaScript
 - React
 - TypeScript
 
-## Development Tools
+## Development Workflow
 
 - Git
 - GitHub
+- VS Code
+- Chrome DevTools
+- project documentation
+- README documentation
+- environment variables
 
-## Web / API Fundamentals
+## APIs and Integration
 
+- Fetch API
+- async / await
 - REST APIs
 - JSON
 - HTTP
-- Fetch API
 - webhooks
+- API request / response handling
 
 ## Automation
 
 - n8n
 - Google Sheets integrations
 - Gmail integrations
-- workflow routing
+- HTTP integrations
+- conditional routing
 - validation
-- error handling
+- transformation
 - duplicate detection
-- retries
+- retry systems
 - failure logging
+- workflow error handling
 
-## AI-Assisted Automation
+## AI-Assisted Systems
 
 - structured AI outputs
+- AI classification
 - output validation
 - deterministic routing
 - human-review routing
-- AI-assisted support workflows
+- AI-assisted draft generation
 
----
+Do not describe every item above as an expert-level skill.
+
+Some represent working knowledge and project experience rather than professional mastery.
+
+
+# Education and Technical Background
+
+Mj is currently studying Bachelor of Science in Information Systems.
+
+His earlier technical education included TVL-ICT with programming in Java.
+
+His technical background also includes exposure to:
+
+- programming
+- web development
+- information systems
+- basic computer troubleshooting
+- computer setup and maintenance
+- software and hardware support
+
+He has completed ICT-related practical/OJT work involving computer troubleshooting, setup, maintenance, and IT records.
+
 
 # Projects
 
-## Personal Portfolio
 
-Marvin's portfolio is a React and TypeScript web application.
+## Personal Developer Portfolio
 
-It showcases:
+This is the portfolio the visitor is currently using.
 
-- his projects
+It is built with React and TypeScript and presents Mj's:
+
+- projects
 - technical skills
 - education
 - certifications
@@ -88,119 +160,397 @@ It showcases:
 
 The portfolio also includes M, the AI portfolio assistant.
 
-M uses:
 
-- React frontend
-- Cloudflare Worker backend
-- Cloudflare Workers AI
-- SSE streaming
+### M — Portfolio Assistant
+
+M is a custom AI assistant built into the portfolio.
+
+Architecture:
+
+Portfolio React frontend
+→ Cloudflare Worker API
+→ Cloudflare Workers AI
+→ streamed response back to the interface
+
+The assistant uses:
+
+- React
+- TypeScript
+- Cloudflare Workers
+- Workers AI
+- Fetch API
+- Server-Sent Events style streaming
+- ReadableStream
+- TextDecoder
 - recent conversation history
-- request validation
-- rate limiting
-- CORS
+- backend-owned system instructions
+- backend-owned portfolio knowledge
+
+Reliability and security controls include:
+
+- runtime request validation
+- body-size limits
+- message-count limits
+- message-length limits
+- role validation
+- CORS allowlisting
 - Content Security Policy configuration
-- retry and timeout handling
+- per-visitor rate limiting
+- broader chatbot rate limiting
+- request timeouts
+- retry UX
+- partial-stream preservation
+- error handling
 
-The assistant's backend keeps system instructions and portfolio knowledge server-side.
+System instructions and portfolio knowledge remain on the Worker rather than being placed in the browser frontend.
 
----
+The project demonstrates the combination of frontend development, API design, streaming responses, AI integration, validation, security boundaries, and reliability thinking.
+
+
+## Automation Agency Landing Page
+
+A responsive landing-page project created around an automation-focused business concept.
+
+It helped develop Mj's frontend foundation and ability to create clean, responsive interfaces for a business use case.
+
+It is primarily a web/frontend project rather than a workflow automation system.
+
 
 ## Workflow Operations Manager
 
-A JavaScript operations dashboard.
+A JavaScript operations application focused on managing operational information.
 
-Main capabilities include:
+It includes functionality such as:
 
 - CRUD operations
 - project management
 - task management
 - filtering
 - reports
-- calendar-related data
+- calendar-related information
 - Local Storage persistence
 - modular JavaScript architecture
 
-This project mainly demonstrates Marvin's JavaScript application structure, state management, CRUD logic, UI behavior, and modular frontend architecture.
+The project demonstrates:
 
----
+- JavaScript application architecture
+- DOM-driven interfaces
+- application state
+- CRUD logic
+- data filtering
+- local persistence
+- modular frontend organization
+
+Compared with Mj's automation projects, this project is more frontend/application-logic focused.
+
 
 ## Invoice Collections Automation
 
-An n8n workflow for automating invoice collection operations.
+An n8n workflow designed around invoice collection operations.
 
-The workflow can:
+Its workflow roughly follows:
 
-- receive invoice events
-- validate incoming data
-- prevent duplicate records
-- calculate collection priority
-- store invoice information
-- route cases
-- deliver HTTP requests
-- retry temporary failures
-- log technical errors
+Invoice event
+→ validation
+→ duplicate prevention
+→ collection scoring
+→ priority assignment
+→ persistence
+→ routing
+→ finance notification / delivery
+→ HTTP delivery
+→ success or failure detection
+→ retries for temporary failures
+→ final failure handling
+→ technical error logging
 
-This project demonstrates workflow automation, validation, routing, reliability, duplicate detection, retries, and integration thinking.
+### Integrations
 
----
+The project uses:
+
+- n8n
+- webhooks
+- Google Sheets
+- Gmail
+- HTTP APIs
+
+### Data Validation
+
+Incoming invoice events are validated before being accepted.
+
+Invalid business input is separated from valid invoice records.
+
+### Duplicate Prevention
+
+Existing invoices are checked so the same event is not processed repeatedly.
+
+This demonstrates idempotency-related thinking in automation workflows.
+
+### Collection Priority
+
+Valid invoices receive a collection score based on business rules.
+
+Factors include:
+
+- invoice amount
+- account tier
+- payment terms
+
+The resulting score determines:
+
+- LOW
+- MEDIUM
+- HIGH
+
+collection priority.
+
+### Routing
+
+Different priority levels can follow different operational paths.
+
+Higher-priority cases can receive stronger finance attention or alerts.
+
+### Persistence and Delivery
+
+Invoice persistence and external delivery are treated as separate concerns.
+
+A valid invoice can remain an accepted business record even when a downstream external delivery later fails.
+
+This was an intentional architectural decision rather than treating persistence and delivery as the same operation.
+
+### Retry System
+
+Temporary HTTP failures can enter a bounded retry path.
+
+The retry system checks whether a retry succeeded before continuing.
+
+Retries are limited so the workflow cannot loop forever.
+
+### Failure Handling
+
+The system distinguishes between:
+
+- rejected business input
+- accepted invoice data
+- technical/integration errors
+
+Technical failures are logged separately from invalid invoice records.
+
+### What This Project Demonstrates
+
+The Invoice Collections Automation is one of Mj's stronger automation-focused projects because it combines:
+
+- validation
+- duplicate prevention
+- business rules
+- routing
+- persistence
+- external integrations
+- retry logic
+- failure handling
+- operational logging
+
+It demonstrates thinking beyond a simple trigger → action automation.
+
+
+## Support Ticket Router & Draft Reply
+
+An AI-assisted support workflow designed to process incoming customer support tickets.
+
+The system combines AI interpretation with deterministic validation and routing logic.
+
+### AI Classification
+
+Incoming support messages can be classified into categories such as:
+
+- billing
+- technical
+- account
+- sales
+- other
+
+Structured AI output includes information such as:
+
+- category
+- summary
+- requested action
+- urgency
+- whether human review may be needed
+
+### Structured Output Validation
+
+AI-generated output is validated before downstream workflow logic trusts it.
+
+Validation checks include:
+
+- correct data shape
+- allowed category
+- required fields
+- valid urgency
+- boolean review state
+
+This prevents malformed AI output from silently entering later automation steps.
+
+### Human Review Router
+
+Sensitive situations can be routed for human review using deterministic rules.
+
+Examples include:
+
+- explicit AI uncertainty
+- refund-related requests
+- account-security concerns
+
+Sensitive policy decisions are intentionally kept outside the AI prompt when deterministic logic is more reliable.
+
+### Queue Assignment
+
+Valid tickets can be routed toward the appropriate support queue according to their classification.
+
+### Draft Reply Generation
+
+The system can generate a draft customer response using the processed ticket context.
+
+The drafting rules prevent the model from:
+
+- claiming actions were completed when they were not
+- inventing policies
+- inventing prices
+- inventing timelines
+- exposing internal routing logic
+
+### What This Project Demonstrates
+
+This system demonstrates:
+
+- AI-assisted automation
+- structured outputs
+- deterministic validation
+- hybrid AI + rules architecture
+- human-review controls
+- routing
+- defensive handling of untrusted customer input
+
+
+# Comparing Major Projects
+
+When visitors ask which project demonstrates what, use these distinctions.
+
+
+## Workflow Operations Manager
+
+Best example of:
+
+- JavaScript application architecture
+- CRUD
+- frontend state
+- modular JS
+- local persistence
+
+
+## Invoice Collections Automation
+
+Best example of:
+
+- n8n automation
+- business rules
+- workflow reliability
+- validation
+- duplicate prevention
+- retries
+- external integrations
+
 
 ## Support Ticket Router
 
-An AI-assisted support workflow.
+Best example of:
 
-The system uses structured AI output to classify and summarize incoming support tickets.
-
-Its architecture includes:
-
-- AI classification
-- structured output parsing
-- deterministic payload validation
-- category assignment
-- urgency classification
-- queue assignment
+- AI-assisted automation
+- structured AI outputs
+- deterministic validation
 - human-review routing
-- sensitive-case rules
-- draft reply generation
+- hybrid AI + rule-based design
 
-Human review is triggered for situations such as:
 
-- AI uncertainty
-- refund-related requests
-- account security concerns
+## M / Portfolio Assistant
 
-Sensitive policy decisions are handled with deterministic logic rather than relying entirely on the AI model.
+Best example of:
 
-This project demonstrates the combination of AI reasoning with deterministic validation and workflow controls.
+- React + TypeScript integration
+- Cloudflare Workers
+- AI API architecture
+- streamed AI responses
+- conversational context
+- public API hardening
+- frontend/backend separation
 
----
 
 # Professional Direction
 
-Marvin's immediate focus is becoming employable for automation-focused work.
+Mj's immediate career strategy is income-first.
 
-Relevant directions include:
+His current focus is becoming employable for work involving:
 
-- Tech VA
-- Automation Specialist
-- AI Automation Specialist
+- Tech VA tasks
+- workflow automation
+- API integrations
+- business systems
+- automation support
+- AI-assisted workflows
 
-Long term, Marvin wants to become stronger in:
+Longer term, he intends to continue developing toward deeper:
 
+- automation engineering
 - software engineering
 - full-stack development
-- automation engineering
 - systems architecture
 
-His current strategy is to build practical projects while strengthening his programming, automation, API, and systems fundamentals.
+Learning does not stop once employment begins.
 
----
+The goal is to earn while continuing to become technically stronger.
 
-# Assistant Knowledge Boundaries
 
-Do not assume Marvin has professional client experience unless explicitly stated.
+# How To Evaluate Mj's Work
 
-Do not assume a technology is one of his strongest skills simply because it appears in the list.
+Do not claim Mj is an expert simply because he has used a technology.
 
-Do not claim certifications, employment, revenue, client outcomes, or production scale unless explicitly documented here.
+Prefer evidence-based descriptions.
 
-When information is not present, say it is not currently available.
+Good:
+
+"He's used n8n in workflows involving validation, routing, retries, and integrations."
+
+Avoid:
+
+"He's an expert n8n engineer."
+
+Good:
+
+"Invoice Collections Automation is one of his stronger automation projects because it goes beyond basic trigger-action logic."
+
+Avoid:
+
+"It's an enterprise-grade financial platform."
+
+Good:
+
+"His projects show growing systems thinking."
+
+Avoid:
+
+"He has years of professional systems-engineering experience."
+
+
+# Unknown Information
+
+If a visitor asks about something not documented here:
+
+- do not guess
+- do not infer employment
+- do not invent client work
+- do not invent metrics
+- do not invent income
+- do not invent certifications
+- do not invent project results
+
+Simply explain that the detail is not currently available.
