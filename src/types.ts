@@ -11,10 +11,19 @@ export interface Env {
 	/**
 	 * Binding for static assets.
 	 */
-	ASSETS: { fetch: (request: Request) => Promise<Response> };
+	ASSETS: {
+		fetch: (request: Request) => Promise<Response>;
+	};
 
-	CHAT_CLIENT_RATE_LIMITER: RateLimit
-  	CHAT_GLOBAL_RATE_LIMITER: RateLimit
+	/**
+	 * Rate limiter for individual visitors.
+	 */
+	CHAT_CLIENT_RATE_LIMITER: RateLimit;
+
+	/**
+	 * Broader rate limiter for the portfolio chatbot.
+	 */
+	CHAT_GLOBAL_RATE_LIMITER: RateLimit;
 }
 
 /**
