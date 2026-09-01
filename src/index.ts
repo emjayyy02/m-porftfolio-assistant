@@ -1,19 +1,38 @@
 /**
  * LLM Chat Application Template
  *
- * A simple chat application using Cloudflare Workers AI.
- * This template demonstrates how to implement an LLM-powered chat interface with
- * streaming responses using Server-Sent Events (SSE).
+ * Portfolio assistant using Cloudflare Workers AI.
  *
  * @license MIT
  */
+
 import { Env, ChatMessage } from "./types";
 
-// Model ID for Workers AI model
-// https://developers.cloudflare.com/workers-ai/models/
+
+// --------------------------------------------------
+// CONFIGURATION
+// --------------------------------------------------
+
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
-// Default system prompt
+const MAX_BODY_SIZE = 12_000;
+const MAX_MESSAGES = 10;
+const MAX_MESSAGE_LENGTH = 750;
+
+const ALLOWED_ORIGINS = [
+	// Replace this later with your real deployed portfolio origin.
+	"https://YOUR-PORTFOLIO-DOMAIN.com",
+
+	// Local development.
+	"http://localhost:5500",
+	"http://127.0.0.1:5500",
+];
+
+
+// --------------------------------------------------
+// ASSISTANT PROMPT
+// --------------------------------------------------
+
 const SYSTEM_PROMPT = `
 You are Marvin's portfolio assistant.
 
@@ -70,49 +89,156 @@ PORTFOLIO CONTEXT:
 ${PORTFOLIO_CONTEXT}
 `;
 
+
+// --------------------------------------------------
+// MAIN WORKER
+// --------------------------------------------------
+
 export default {
-	/**
-	 * Main request handler for the Worker
-	 */
 	async fetch(
 		request: Request,
 		env: Env,
 		ctx: ExecutionContext,
 	): Promise<Response> {
+
 		const url = new URL(request.url);
 
-		// Handle static assets (frontend)
-		if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
+
+		// ----------------------------------------------
+		// STATIC FRONTEND
+		// ----------------------------------------------
+
+		if (
+			url.pathname === "/" ||
+			!url.pathname.startsWith("/api/")
+		) {
 			return env.ASSETS.fetch(request);
 		}
 
-		// API Routes
+
+		// ----------------------------------------------
+		// CHAT API
+		// ----------------------------------------------
+
 		if (url.pathname === "/api/chat") {
-			// Handle POST requests for chat
+
+			// CORS preflight
+			if (request.method === "OPTIONS") {
+
+				if (!isOriginAllowed(request)) {
+					return new Response(null, {
+						status: 403,
+					});
+				}
+
+				return new Response(null, {
+					status: 204,
+					headers: getCorsHeaders(request),
+				});
+			}
+
+
+			// Chat request
 			if (request.method === "POST") {
+
+				if (!isOriginAllowed(request)) {
+					return jsonError(
+						"Origin not allowed.",
+						403,
+						request,
+					);
+				}
+
 				return handleChatRequest(request, env);
 			}
 
-			// Method not allowed for other request types
-			return new Response("Method not allowed", { status: 405 });
+
+			// Everything except POST / OPTIONS
+			return new Response(
+				"Method not allowed",
+				{
+					status: 405,
+					headers: getCorsHeaders(request),
+				},
+			);
 		}
 
-		// Handle 404 for unmatched routes
-		return new Response("Not found", { status: 404 });
+
+		// Unknown API route
+		return new Response(
+			"Not found",
+			{ status: 404 },
+		);
 	},
+
 } satisfies ExportedHandler<Env>;
 
-/**
- * Handles chat API requests
- */
+
+// --------------------------------------------------
+// CHAT REQUEST HANDLER
+// --------------------------------------------------
+
 async function handleChatRequest(
 	request: Request,
 	env: Env,
 ): Promise<Response> {
-	try {
-		const body = await request.json();
 
-		// 1. Validate top-level body
+	try {
+
+		// ----------------------------------------------
+		// 1. READ RAW BODY
+		// ----------------------------------------------
+
+		let rawBody: string;
+
+		try {
+			rawBody = await request.text();
+		} catch {
+			return jsonError(
+				"Unable to read request body.",
+				400,
+				request,
+			);
+		}
+
+
+		// ----------------------------------------------
+		// 2. BODY SIZE LIMIT
+		// ----------------------------------------------
+
+		const bodySize =
+			new TextEncoder().encode(rawBody).length;
+
+		if (bodySize > MAX_BODY_SIZE) {
+			return jsonError(
+				`Request body cannot exceed ${MAX_BODY_SIZE} bytes.`,
+				413,
+				request,
+			);
+		}
+
+
+		// ----------------------------------------------
+		// 3. PARSE JSON
+		// ----------------------------------------------
+
+		let body: unknown;
+
+		try {
+			body = JSON.parse(rawBody);
+		} catch {
+			return jsonError(
+				"Request body must contain valid JSON.",
+				400,
+				request,
+			);
+		}
+
+
+		// ----------------------------------------------
+		// 4. VALIDATE TOP-LEVEL BODY
+		// ----------------------------------------------
+
 		if (
 			typeof body !== "object" ||
 			body === null ||
@@ -121,38 +247,55 @@ async function handleChatRequest(
 			return jsonError(
 				"Request body must contain a messages array.",
 				400,
+				request,
 			);
 		}
+
 
 		const { messages } = body as {
 			messages: unknown;
 		};
 
-		// 2. Validate messages container
+
+		// ----------------------------------------------
+		// 5. VALIDATE MESSAGES ARRAY
+		// ----------------------------------------------
+
 		if (!Array.isArray(messages)) {
-			return jsonError("messages must be an array.", 400);
+			return jsonError(
+				"messages must be an array.",
+				400,
+				request,
+			);
 		}
 
-		// 3. Limit conversation size
-		const MAX_MESSAGES = 10;
 
 		if (messages.length === 0) {
-			return jsonError("messages cannot be empty.", 400);
+			return jsonError(
+				"messages cannot be empty.",
+				400,
+				request,
+			);
 		}
+
 
 		if (messages.length > MAX_MESSAGES) {
 			return jsonError(
 				`Conversation cannot exceed ${MAX_MESSAGES} messages.`,
 				400,
+				request,
 			);
 		}
 
-		const MAX_MESSAGE_LENGTH = 750;
+
+		// ----------------------------------------------
+		// 6. VALIDATE INDIVIDUAL MESSAGES
+		// ----------------------------------------------
 
 		const safeMessages: ChatMessage[] = [];
 
-		// 4. Validate every message
 		for (const message of messages) {
+
 			if (
 				typeof message !== "object" ||
 				message === null
@@ -160,44 +303,62 @@ async function handleChatRequest(
 				return jsonError(
 					"Each message must be an object.",
 					400,
+					request,
 				);
 			}
+
 
 			const { role, content } = message as {
 				role?: unknown;
 				content?: unknown;
 			};
 
-			// System messages are owned by the backend.
-			if (role !== "user" && role !== "assistant") {
+
+			// The frontend can never provide system messages.
+			if (
+				role !== "user" &&
+				role !== "assistant"
+			) {
 				return jsonError(
 					"Message role must be user or assistant.",
 					400,
+					request,
 				);
 			}
+
 
 			if (typeof content !== "string") {
 				return jsonError(
 					"Message content must be a string.",
 					400,
+					request,
 				);
 			}
 
+
 			const trimmedContent = content.trim();
+
 
 			if (trimmedContent.length === 0) {
 				return jsonError(
 					"Message content cannot be empty.",
 					400,
+					request,
 				);
 			}
 
-			if (trimmedContent.length > MAX_MESSAGE_LENGTH) {
+
+			if (
+				trimmedContent.length >
+				MAX_MESSAGE_LENGTH
+			) {
 				return jsonError(
 					`Each message cannot exceed ${MAX_MESSAGE_LENGTH} characters.`,
 					400,
+					request,
 				);
 			}
+
 
 			safeMessages.push({
 				role,
@@ -205,53 +366,177 @@ async function handleChatRequest(
 			});
 		}
 
-		// 5. Backend owns the system prompt
+
+		// ----------------------------------------------
+		// 7. BACKEND-OWNED SYSTEM PROMPT
+		// ----------------------------------------------
+
 		safeMessages.unshift({
 			role: "system",
 			content: FULL_SYSTEM_PROMPT,
 		});
 
-		// 6. Send validated messages to Workers AI
+
+		// ----------------------------------------------
+		// 8. PREPARE AI INPUT
+		// ----------------------------------------------
+
 		const inputs = {
 			messages: safeMessages,
 			max_tokens: 1024,
 			stream: true,
-		} satisfies AiTextGenerationInput & { stream: true };
+		} satisfies AiTextGenerationInput & {
+			stream: true;
+		};
 
-		const stream = await env.AI.run<typeof MODEL_ID>(
-			MODEL_ID,
-			inputs,
-		);
 
-		// 7. Stream AI response back to frontend
+		// ----------------------------------------------
+		// 9. CALL WORKERS AI
+		// ----------------------------------------------
+
+		const stream =
+			await env.AI.run<typeof MODEL_ID>(
+				MODEL_ID,
+				inputs,
+			);
+
+
+		// ----------------------------------------------
+		// 10. RETURN STREAM
+		// ----------------------------------------------
+
 		return new Response(stream, {
 			headers: {
-				"content-type": "text/event-stream; charset=utf-8",
+				"content-type":
+					"text/event-stream; charset=utf-8",
+
 				"cache-control": "no-cache",
+
 				connection: "keep-alive",
+
+				...getCorsHeaders(request),
 			},
 		});
-	} catch (error) {
-		console.error("Error processing chat request:", error);
 
-		return jsonError("Failed to process request.", 500);
+
+	} catch (error) {
+
+		console.error(
+			"Error processing chat request:",
+			error,
+		);
+
+		return jsonError(
+			"Failed to process request.",
+			500,
+			request,
+		);
 	}
 }
 
 
-/**
- * Returns a JSON error response.
- */
-function jsonError(message: string, status: number): Response {
+// --------------------------------------------------
+// JSON ERROR HELPER
+// --------------------------------------------------
+
+function jsonError(
+	message: string,
+	status: number,
+	request?: Request,
+): Response {
+
 	return new Response(
 		JSON.stringify({
 			error: message,
 		}),
 		{
 			status,
+
 			headers: {
 				"content-type": "application/json",
+
+				...(request
+					? getCorsHeaders(request)
+					: {}),
 			},
 		},
+	);
+}
+
+
+// --------------------------------------------------
+// CORS
+// --------------------------------------------------
+
+function getCorsHeaders(
+	request: Request,
+): Record<string, string> {
+
+	const origin =
+		request.headers.get("Origin");
+
+	if (!origin) {
+		return {};
+	}
+
+
+	const workerOrigin =
+		new URL(request.url).origin;
+
+
+	const allowed =
+		origin === workerOrigin ||
+		ALLOWED_ORIGINS.includes(origin);
+
+
+	if (!allowed) {
+		return {};
+	}
+
+
+	return {
+		"Access-Control-Allow-Origin": origin,
+
+		"Access-Control-Allow-Methods":
+			"POST, OPTIONS",
+
+		"Access-Control-Allow-Headers":
+			"Content-Type",
+
+		"Vary": "Origin",
+	};
+}
+
+
+// --------------------------------------------------
+// ORIGIN VALIDATION
+// --------------------------------------------------
+
+function isOriginAllowed(
+	request: Request,
+): boolean {
+
+	const origin =
+		request.headers.get("Origin");
+
+
+	/*
+	Requests without Origin may come from:
+	- curl
+	- Postman
+	- server-to-server clients
+	*/
+	if (!origin) {
+		return true;
+	}
+
+
+	const workerOrigin =
+		new URL(request.url).origin;
+
+
+	return (
+		origin === workerOrigin ||
+		ALLOWED_ORIGINS.includes(origin)
 	);
 }
