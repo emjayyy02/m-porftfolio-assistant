@@ -683,22 +683,37 @@ function getMaxResponseTokens(
 	message: string,
 ): number {
 
-	/*
-		Only explicit requests for detail should get
-		the larger response budget.
-
-		Comparisons and normal portfolio questions stay
-		at the smaller limit.
-	*/
+	// ----------------------------------------------
+	// DEEP / DETAILED RESPONSE
+	// ----------------------------------------------
 
 	const detailedRequest =
 		/\b(detail|detailed|breakdown|architecture|step[- ]?by[- ]?step|how does|how did|how is|how was|how it works|technical explanation|technical depth|explain in depth|deep dive)\b/i
 			.test(message);
 
+	if (detailedRequest) {
+		return 512;
+	}
 
-	return detailedRequest
-		? 512
-		: 128;
+
+	// ----------------------------------------------
+	// TECHNICAL / CODE / STRUCTURED EXAMPLE
+	// ----------------------------------------------
+
+	const technicalRequest =
+		/\b(code|example|json|payload|schema|request body|api request|response body|typescript|javascript|html|css|curl|fetch|webhook payload)\b/i
+			.test(message);
+
+	if (technicalRequest) {
+		return 384;
+	}
+
+
+	// ----------------------------------------------
+	// NORMAL PORTFOLIO RESPONSE
+	// ----------------------------------------------
+
+	return 128;
 }
 
 
