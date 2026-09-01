@@ -111,17 +111,20 @@ async function handleChatRequest(
 ): Promise<Response> {
 	try {
 		// Parse JSON request body
-		const { messages = [] } = (await request.json()) as {
-			messages: ChatMessage[];
-		};
-
-		// Add system prompt if not present
-		if (!messages.some((msg) => msg.role === "system")) {
-			messages.unshift({ role: "system", content: FULL_SYSTEM_PROMPT });
-		}
+	const { messages = [] } = (await request.json()) as {
+	messages: ChatMessage[];
+};
+		
+	const safeMessages = messages.filter(
+	(msg) => msg.role !== "system"
+);
+		safeMessages.unshift({
+			role: "system",
+			content: FULL_SYSTEM_PROMPT
+});
 
 		const inputs = {
-			messages,
+			messages: safeMessages,
 			max_tokens: 1024,
 			stream: true,
 		} satisfies AiTextGenerationInput & { stream: true };
