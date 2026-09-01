@@ -36,6 +36,32 @@ RULES:
 If a user asks something unrelated, politely explain that you are Marvin's portfolio assistant and can answer questions about his work, projects, skills, or background.
 `;
 
+const PORTFOLIO_CONTEXT = `
+Marvin Silverio, also called Mj, is currently building toward
+Tech VA and Automation Specialist work.
+
+His current technical skills include HTML, CSS, JavaScript,
+responsive web development, REST APIs, webhooks, Git, GitHub,
+and n8n automation.
+
+Selected projects:
+
+1. Personal Portfolio
+A responsive personal website showcasing his skills, projects,
+background, and professional direction.
+
+2. Workflow Operations Manager
+A vanilla JavaScript operations dashboard with CRUD,
+task and project management, filters, reports, calendar data,
+Local Storage, and modular architecture.
+
+3. Invoice Collections Automation
+An n8n workflow that receives invoice events, validates data,
+prevents duplicates, calculates collection priority,
+stores invoices, routes cases, handles HTTP delivery,
+retries temporary failures, and logs technical errors.
+`;
+
 export default {
 	/**
 	 * Main request handler for the Worker
