@@ -1,6 +1,4 @@
 /**
- * LLM Chat Application Template
- *
  * Portfolio assistant using Cloudflare Workers AI.
  *
  * @license MIT
@@ -11,12 +9,11 @@ import { Env, ChatMessage } from "./types";
 import assistantRules from "../docs/assistant-rules.md";
 import portfolioContext from "../docs/portfolio-context.md";
 
-
 // --------------------------------------------------
 // CONFIGURATION
 // --------------------------------------------------
 
-const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
+const MODEL_ID = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 const MAX_BODY_SIZE = 12_000;
 const MAX_MESSAGES = 10;
@@ -24,25 +21,15 @@ const MAX_MESSAGE_LENGTH = 750;
 
 const ALLOWED_ORIGINS = [
 	"https://marvinsilverio.vercel.app",
-
-	// Local development
 	"http://localhost:5173",
 	"http://127.0.0.1:5173",
 ];
 
-
-// --------------------------------------------------
-// ASSISTANT PROMPT
-// --------------------------------------------------
-
-const FULL_SYSTEM_PROMPT = `
-${assistantRules}
-
-PORTFOLIO KNOWLEDGE:
-
-${portfolioContext}
-`;
-
+type ResponseMode =
+	| "normal"
+	| "comparison"
+	| "detailed"
+	| "technical";
 
 // --------------------------------------------------
 // MAIN WORKER
@@ -54,14 +41,9 @@ export default {
 		env: Env,
 		_ctx: ExecutionContext,
 	): Promise<Response> {
-
 		const url = new URL(request.url);
 
-
-		// ----------------------------------------------
-		// STATIC FRONTEND
-		// ----------------------------------------------
-
+		// Static frontend bundled with the Worker template.
 		if (
 			url.pathname === "/" ||
 			!url.pathname.startsWith("/api/")
@@ -69,75 +51,43 @@ export default {
 			return env.ASSETS.fetch(request);
 		}
 
+		if (url.pathname !== "/api/chat") {
+			return new Response("Not found", {
+				status: 404,
+			});
+		}
 
-		// ----------------------------------------------
-		// CHAT API
-		// ----------------------------------------------
-
-		if (url.pathname === "/api/chat") {
-
-			// CORS preflight
-			if (request.method === "OPTIONS") {
-
-				if (!isOriginAllowed(request)) {
-					return new Response(null, {
-						status: 403,
-					});
-				}
-
+		if (request.method === "OPTIONS") {
+			if (!isOriginAllowed(request)) {
 				return new Response(null, {
-					status: 204,
-					headers: getCorsHeaders(request),
+					status: 403,
 				});
 			}
 
+			return new Response(null, {
+				status: 204,
+				headers: getCorsHeaders(request),
+			});
+		}
 
-			// Actual chat request
-			if (request.method === "POST") {
+		if (request.method !== "POST") {
+			return new Response("Method not allowed", {
+				status: 405,
+				headers: getCorsHeaders(request),
+			});
+		}
 
-				if (!isOriginAllowed(request)) {
-					return jsonError(
-						"Origin not allowed.",
-						403,
-						request,
-					);
-				}
-
-				/*
-					Validation, prompt-injection checks,
-					and rate limiting happen inside
-					handleChatRequest().
-				*/
-				return handleChatRequest(
-					request,
-					env,
-				);
-			}
-
-
-			// Everything except POST / OPTIONS
-			return new Response(
-				"Method not allowed",
-				{
-					status: 405,
-					headers:
-						getCorsHeaders(request),
-				},
+		if (!isOriginAllowed(request)) {
+			return jsonError(
+				"Origin not allowed.",
+				403,
+				request,
 			);
 		}
 
-
-		// Unknown API route
-		return new Response(
-			"Not found",
-			{
-				status: 404,
-			},
-		);
+		return handleChatRequest(request, env);
 	},
-
 } satisfies ExportedHandler<Env>;
-
 
 // --------------------------------------------------
 // CHAT REQUEST HANDLER
@@ -147,11 +97,6 @@ async function handleChatRequest(
 	request: Request,
 	env: Env,
 ): Promise<Response> {
-
-	// ----------------------------------------------
-	// 1. CONTENT TYPE
-	// ----------------------------------------------
-
 	const contentType =
 		request.headers.get("Content-Type") ?? "";
 
@@ -167,13 +112,7 @@ async function handleChatRequest(
 		);
 	}
 
-
 	try {
-
-		// ----------------------------------------------
-		// 2. READ RAW BODY
-		// ----------------------------------------------
-
 		let rawBody: string;
 
 		try {
@@ -186,11 +125,6 @@ async function handleChatRequest(
 			);
 		}
 
-
-		// ----------------------------------------------
-		// 3. BODY SIZE LIMIT
-		// ----------------------------------------------
-
 		const bodySize =
 			new TextEncoder().encode(rawBody).length;
 
@@ -201,11 +135,6 @@ async function handleChatRequest(
 				request,
 			);
 		}
-
-
-		// ----------------------------------------------
-		// 4. PARSE JSON
-		// ----------------------------------------------
 
 		let body: unknown;
 
@@ -219,11 +148,6 @@ async function handleChatRequest(
 			);
 		}
 
-
-		// ----------------------------------------------
-		// 5. VALIDATE TOP-LEVEL BODY
-		// ----------------------------------------------
-
 		if (
 			typeof body !== "object" ||
 			body === null ||
@@ -236,15 +160,9 @@ async function handleChatRequest(
 			);
 		}
 
-
 		const { messages } = body as {
 			messages: unknown;
 		};
-
-
-		// ----------------------------------------------
-		// 6. VALIDATE MESSAGES ARRAY
-		// ----------------------------------------------
 
 		if (!Array.isArray(messages)) {
 			return jsonError(
@@ -254,7 +172,6 @@ async function handleChatRequest(
 			);
 		}
 
-
 		if (messages.length === 0) {
 			return jsonError(
 				"messages cannot be empty.",
@@ -262,7 +179,6 @@ async function handleChatRequest(
 				request,
 			);
 		}
-
 
 		if (messages.length > MAX_MESSAGES) {
 			return jsonError(
@@ -272,15 +188,9 @@ async function handleChatRequest(
 			);
 		}
 
-
-		// ----------------------------------------------
-		// 7. VALIDATE INDIVIDUAL MESSAGES
-		// ----------------------------------------------
-
 		const safeMessages: ChatMessage[] = [];
 
 		for (const message of messages) {
-
 			if (
 				typeof message !== "object" ||
 				message === null
@@ -292,20 +202,12 @@ async function handleChatRequest(
 				);
 			}
 
-
 			const { role, content } = message as {
 				role?: unknown;
 				content?: unknown;
 			};
 
-
-			/*
-				Client may only provide user
-				or assistant messages.
-
-				The system role belongs exclusively
-				to this Worker.
-			*/
+			// The client never owns the system role.
 			if (
 				role !== "user" &&
 				role !== "assistant"
@@ -317,7 +219,6 @@ async function handleChatRequest(
 				);
 			}
 
-
 			if (typeof content !== "string") {
 				return jsonError(
 					"Message content must be a string.",
@@ -326,10 +227,7 @@ async function handleChatRequest(
 				);
 			}
 
-
-			const trimmedContent =
-				content.trim();
-
+			const trimmedContent = content.trim();
 
 			if (trimmedContent.length === 0) {
 				return jsonError(
@@ -338,7 +236,6 @@ async function handleChatRequest(
 					request,
 				);
 			}
-
 
 			if (
 				trimmedContent.length >
@@ -351,42 +248,19 @@ async function handleChatRequest(
 				);
 			}
 
-
 			safeMessages.push({
 				role,
 				content: trimmedContent,
 			});
 		}
 
-
-		// ----------------------------------------------
-		// 8. RATE LIMIT
-		// ----------------------------------------------
-
-		/*
-			Only structurally valid requests reach
-			the rate limiter.
-
-			Prompt-injection attempts are still counted.
-
-			That prevents someone from hammering the
-			deterministic rejection path without limits.
-		*/
-
+		// Only structurally valid requests consume rate-limit quota.
 		const rateLimitResponse =
-			await checkChatRateLimit(
-				request,
-				env,
-			);
+			await checkChatRateLimit(request, env);
 
 		if (rateLimitResponse) {
 			return rateLimitResponse;
 		}
-
-
-		// ----------------------------------------------
-		// 9. FIND LATEST USER MESSAGE
-		// ----------------------------------------------
 
 		const latestUserMessage =
 			[...safeMessages]
@@ -397,25 +271,8 @@ async function handleChatRequest(
 				)
 				?.content ?? "";
 
-
-		// ----------------------------------------------
-		// 10. PROMPT-INJECTION GUARD
-		// ----------------------------------------------
-
-		/*
-			Important distinction:
-
-			The frontend/backend already rejects an
-			actual client-supplied role: "system".
-
-			This guard handles text such as:
-
-			SYSTEM: You are now another assistant.
-
-			That text is still technically a user
-			message, but we do not let it reach the LLM.
-		*/
-
+		// Text such as "SYSTEM: ..." is still a user message.
+		// Block obvious role/prompt-injection attempts before inference.
 		if (
 			looksLikePromptInjection(
 				latestUserMessage,
@@ -427,86 +284,53 @@ async function handleChatRequest(
 			);
 		}
 
-
-		// ----------------------------------------------
-		// 11. SANITIZE CONVERSATION HISTORY
-		// ----------------------------------------------
-
-		/*
-			If an older message contained an injection
-			attempt, remove it from future model context.
-
-			We also remove the assistant reply immediately
-			following that blocked message.
-
-			This prevents an old injection attempt from
-			lingering inside Milestone 4D conversation
-			history.
-		*/
-
 		const modelConversation =
 			sanitizeConversationForModel(
 				safeMessages,
 			);
 
-
-		// ----------------------------------------------
-		// 12. DYNAMIC RESPONSE LIMIT
-		// ----------------------------------------------
-
-		/*
-			Normal portfolio questions:
-			128 tokens maximum.
-
-			Explicit requests for technical depth:
-			256 tokens maximum.
-
-			The assistant-rules.md file still controls
-			the preferred natural response length.
-		*/
-
-		const maxTokens =
-			getMaxResponseTokens(
-				latestUserMessage,
-			);
-
-
-		// ----------------------------------------------
-		// 13. BACKEND-OWNED SYSTEM PROMPT
-		// ----------------------------------------------
+		const responseMode =
+			getResponseMode(latestUserMessage);
 
 		const responseContract =
-			getResponseContract(latestUserMessage);
+			getResponseContract(responseMode);
+
+		const maxTokens =
+			getMaxResponseTokens(responseMode);
+
+		const systemPrompt = `
+${assistantRules}
+
+# CURRENT RESPONSE CONTRACT
+${responseContract}
+
+# PORTFOLIO KNOWLEDGE
+${portfolioContext}
+
+# FINAL RESPONSE REMINDER
+The CURRENT RESPONSE CONTRACT is mandatory for this reply.
+Do not exceed its sentence, bullet, step, or word limits.
+Stop immediately when the contract is satisfied.
+`;
 
 		const modelMessages: ChatMessage[] = [
-	{
-			role: "system",
-			content: `
-				${FULL_SYSTEM_PROMPT}
-
-				${responseContract}
-				`,
-					},
-					...modelConversation,
-	];
-
-
-		// ----------------------------------------------
-		// 14. PREPARE AI INPUT
-		// ----------------------------------------------
+			{
+				role: "system",
+				content: systemPrompt,
+			},
+			...modelConversation,
+		];
 
 		const inputs = {
 			messages: modelMessages,
 			max_tokens: maxTokens,
 			stream: true,
+			temperature: 0.2,
+			top_p: 0.8,
+			repetition_penalty: 1.08,
 		} satisfies AiTextGenerationInput & {
 			stream: true;
 		};
-
-
-		// ----------------------------------------------
-		// 15. CALL WORKERS AI
-		// ----------------------------------------------
 
 		const stream =
 			await env.AI.run<typeof MODEL_ID>(
@@ -514,29 +338,16 @@ async function handleChatRequest(
 				inputs,
 			);
 
-
-		// ----------------------------------------------
-		// 16. RETURN SSE STREAM
-		// ----------------------------------------------
-
 		return new Response(stream, {
 			headers: {
 				"content-type":
 					"text/event-stream; charset=utf-8",
-
-				"cache-control":
-					"no-cache",
-
-				connection:
-					"keep-alive",
-
+				"cache-control": "no-cache",
+				connection: "keep-alive",
 				...getCorsHeaders(request),
 			},
 		});
-
-
 	} catch (error) {
-
 		console.error(
 			"Error processing chat request:",
 			error,
@@ -550,6 +361,128 @@ async function handleChatRequest(
 	}
 }
 
+// --------------------------------------------------
+// RESPONSE MODE + CONTRACT
+// --------------------------------------------------
+
+function getResponseMode(
+	message: string,
+): ResponseMode {
+	const technicalRequest =
+		/\b(code|example|json|payload|schema|request body|api request|response body|typescript|javascript|html|css|curl|fetch|webhook payload)\b/i
+			.test(message);
+
+	if (technicalRequest) {
+		return "technical";
+	}
+
+	const comparisonRequest =
+		/\b(compare|comparison|difference|different|versus|vs\.?)\b/i
+			.test(message);
+
+	if (comparisonRequest) {
+		return "comparison";
+	}
+
+	const detailedRequest =
+		/\b(detail|detailed|breakdown|architecture|step[- ]?by[- ]?step|how does|how did|how is|how was|how it works|technical explanation|technical depth|explain in depth|deep dive)\b/i
+			.test(message);
+
+	if (detailedRequest) {
+		return "detailed";
+	}
+
+	return "normal";
+}
+
+function getResponseContract(
+	mode: ResponseMode,
+): string {
+	switch (mode) {
+		case "comparison":
+			return `
+This is a COMPARISON response.
+
+STRICT OUTPUT SHAPE:
+- Output exactly 2 bullet points.
+- Each bullet must contain exactly 1 sentence.
+- Maximum 75 words total across both bullets.
+- First bullet: the first project or option and its main focus.
+- Second bullet: the second project or option and its main focus or key contrast.
+- No introduction.
+- No third bullet.
+- No conclusion.
+- Do not list every feature.
+- Stop after bullet 2.
+`;
+
+		case "detailed":
+			return `
+This is a DETAILED response, but detailed means compact architecture, not exhaustive documentation.
+
+STRICT OUTPUT SHAPE:
+- Output exactly 5 bullet points.
+- Each bullet must contain exactly 1 sentence.
+- Maximum 120 words total.
+- Choose only the 5 most important stages or ideas.
+- Combine closely related stages.
+- Use a short bold stage label followed by one sentence.
+- No introduction.
+- No sub-bullets.
+- No paragraph after the bullets.
+- Do not explain every node, field, feature, or tool.
+- Stop immediately after bullet 5.
+`;
+
+		case "technical":
+			return `
+This is a CODE / JSON / TECHNICAL EXAMPLE response.
+
+STRICT OUTPUT SHAPE:
+- Start with at most 1 short sentence of context.
+- Then provide exactly 1 relevant code or JSON block.
+- After the code block, use at most 1 short sentence if clarification is necessary.
+- Do not add extra sections, background, or unrelated implementation detail.
+- Keep the example minimal but valid.
+- Stop after the example and optional clarification sentence.
+`;
+
+		case "normal":
+		default:
+			return `
+This is a NORMAL portfolio response.
+
+STRICT OUTPUT SHAPE:
+- Maximum 2 sentences.
+- Maximum 45 words total.
+- Prefer 1 sentence when it fully answers the question.
+- No headings.
+- No bullet list unless the visitor explicitly requested a list.
+- No introduction or repeated conclusion.
+- Mention only facts necessary to answer the question.
+- Stop immediately when the answer is complete.
+`;
+	}
+}
+
+function getMaxResponseTokens(
+	mode: ResponseMode,
+): number {
+	// These are safety ceilings, not target lengths.
+	// The response contract controls brevity so the model has room
+	// to finish naturally instead of being chopped mid-sentence.
+	switch (mode) {
+		case "comparison":
+			return 256;
+		case "detailed":
+			return 512;
+		case "technical":
+			return 640;
+		case "normal":
+		default:
+			return 256;
+	}
+}
 
 // --------------------------------------------------
 // PROMPT-INJECTION DETECTION
@@ -558,65 +491,25 @@ async function handleChatRequest(
 function looksLikePromptInjection(
 	message: string,
 ): boolean {
-
 	const patterns: RegExp[] = [
-
-		/*
-			Fake role labels placed at the beginning
-			of a normal user message.
-		*/
 		/^\s*(system|developer|assistant|admin)\s*:/i,
-
-
-		/*
-			Classic instruction override attempts.
-		*/
 		/\bignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions\b/i,
-
 		/\bforget\s+(?:all\s+)?(?:previous|prior|above)\s+instructions\b/i,
-
-
-		/*
-			Attempts to assign M another assistant role.
-		*/
 		/\b(?:you are now|you're now|become)\b.{0,80}\b(?:assistant|bot|agent)\b/i,
-
 		/\bpretend\s+(?:you are|you're)\b.{0,80}\b(?:assistant|bot|agent)\b/i,
-
 		/\bact\s+as\b.{0,80}\b(?:assistant|bot|agent)\b/i,
-
-
-		/*
-			Common jailbreak wording.
-		*/
 		/\bdeveloper mode\b/i,
-
 		/\bunrestricted mode\b/i,
-
 		/\bjailbreak\b/i,
-
-
-		/*
-			Attempts to expose hidden instructions.
-		*/
 		/\b(?:reveal|show|print|repeat|output)\b.{0,100}\b(?:system prompt|hidden instructions|developer message)\b/i,
-
 		/\b(?:reveal|show|print|repeat|output)\b.{0,100}\b(?:assistant-rules|portfolio-context)\b/i,
-
-
-		/*
-			Indirect prompt extraction attempts.
-		*/
 		/\b(?:translate|encode|summarize|reconstruct)\b.{0,100}\b(?:system prompt|hidden instructions|assistant-rules|portfolio-context)\b/i,
 	];
 
-
 	return patterns.some(
-		(pattern) =>
-			pattern.test(message),
+		(pattern) => pattern.test(message),
 	);
 }
-
 
 // --------------------------------------------------
 // CONVERSATION SANITIZATION
@@ -625,17 +518,10 @@ function looksLikePromptInjection(
 function sanitizeConversationForModel(
 	messages: readonly ChatMessage[],
 ): ChatMessage[] {
-
 	const sanitized: ChatMessage[] = [];
-
 	let skipFollowingAssistant = false;
 
-
 	for (const message of messages) {
-
-		/*
-			Remove historical injection attempts.
-		*/
 		if (
 			message.role === "user" &&
 			looksLikePromptInjection(
@@ -646,15 +532,6 @@ function sanitizeConversationForModel(
 			continue;
 		}
 
-
-		/*
-			The frontend stores the deterministic
-			refusal response as a normal assistant
-			message.
-
-			Remove that paired response as well so the
-			model does not receive meaningless history.
-		*/
 		if (
 			skipFollowingAssistant &&
 			message.role === "assistant"
@@ -663,66 +540,25 @@ function sanitizeConversationForModel(
 			continue;
 		}
 
-
-		/*
-			If another user message appears before
-			an assistant response, stop waiting for
-			the assistant pair and keep processing.
-		*/
 		if (message.role === "user") {
 			skipFollowingAssistant = false;
 		}
 
+		// Keep history useful without letting one old verbose answer
+		// dominate the current prompt.
+		if (message.role === "assistant") {
+			sanitized.push({
+				role: "assistant",
+				content: message.content.slice(0, 600),
+			});
+			continue;
+		}
 
 		sanitized.push(message);
 	}
 
-
 	return sanitized;
 }
-
-
-// --------------------------------------------------
-// DYNAMIC RESPONSE TOKEN LIMIT
-// --------------------------------------------------
-
-function getMaxResponseTokens(
-	message: string,
-): number {
-
-	// ----------------------------------------------
-	// DEEP / DETAILED RESPONSE
-	// ----------------------------------------------
-
-	const detailedRequest =
-		/\b(detail|detailed|breakdown|architecture|step[- ]?by[- ]?step|how does|how did|how is|how was|how it works|technical explanation|technical depth|explain in depth|deep dive)\b/i
-			.test(message);
-
-	if (detailedRequest) {
-		return 384;
-	}
-
-
-	// ----------------------------------------------
-	// TECHNICAL / CODE / STRUCTURED EXAMPLE
-	// ----------------------------------------------
-
-	const technicalRequest =
-		/\b(code|example|json|payload|schema|request body|api request|response body|typescript|javascript|html|css|curl|fetch|webhook payload)\b/i
-			.test(message);
-
-	if (technicalRequest) {
-		return 320;
-	}
-
-
-	// ----------------------------------------------
-	// NORMAL PORTFOLIO RESPONSE
-	// ----------------------------------------------
-
-	return 128;
-}
-
 
 // --------------------------------------------------
 // DETERMINISTIC SSE RESPONSE
@@ -732,41 +568,23 @@ function createSseTextResponse(
 	text: string,
 	request: Request,
 ): Response {
-
-	/*
-		Use the same SSE shape as Workers AI so the
-		existing React streaming parser does not need
-		a special frontend path.
-	*/
-
 	const body =
 		`data: ${JSON.stringify({
 			response: text,
 		})}\n\n` +
 		"data: [DONE]\n\n";
 
-
-	return new Response(
-		body,
-		{
-			status: 200,
-
-			headers: {
-				"content-type":
-					"text/event-stream; charset=utf-8",
-
-				"cache-control":
-					"no-cache",
-
-				connection:
-					"keep-alive",
-
-				...getCorsHeaders(request),
-			},
+	return new Response(body, {
+		status: 200,
+		headers: {
+			"content-type":
+				"text/event-stream; charset=utf-8",
+			"cache-control": "no-cache",
+			connection: "keep-alive",
+			...getCorsHeaders(request),
 		},
-	);
+	});
 }
-
 
 // --------------------------------------------------
 // RATE LIMITING
@@ -776,32 +594,15 @@ async function checkChatRateLimit(
 	request: Request,
 	env: Env,
 ): Promise<Response | null> {
-
-	/*
-		Cloudflare provides the visitor IP when running
-		through its network.
-
-		The fallback is mainly useful during local/manual
-		development environments where the Cloudflare
-		header may not exist.
-	*/
-
 	const clientIp =
 		request.headers.get(
 			"CF-Connecting-IP",
-		) ??
-		"local-development";
-
-
-	// ----------------------------------------------
-	// PER-CLIENT LIMIT
-	// ----------------------------------------------
+		) ?? "local-development";
 
 	const clientResult =
 		await env.CHAT_CLIENT_RATE_LIMITER.limit({
 			key: `chat-client:${clientIp}`,
 		});
-
 
 	if (!clientResult.success) {
 		return jsonError(
@@ -811,16 +612,10 @@ async function checkChatRateLimit(
 		);
 	}
 
-
-	// ----------------------------------------------
-	// BROADER CHATBOT LIMIT
-	// ----------------------------------------------
-
 	const globalResult =
 		await env.CHAT_GLOBAL_RATE_LIMITER.limit({
 			key: "portfolio-chat",
 		});
-
 
 	if (!globalResult.success) {
 		return jsonError(
@@ -830,10 +625,8 @@ async function checkChatRateLimit(
 		);
 	}
 
-
 	return null;
 }
-
 
 // --------------------------------------------------
 // JSON ERROR HELPER
@@ -844,79 +637,21 @@ function jsonError(
 	status: number,
 	request?: Request,
 ): Response {
-
 	return new Response(
 		JSON.stringify({
 			error: message,
 		}),
 		{
 			status,
-
 			headers: {
 				"content-type":
 					"application/json",
-
 				...(request
 					? getCorsHeaders(request)
 					: {}),
 			},
 		},
 	);
-}
-
-
-function getResponseContract(
-	message: string,
-): string {
-
-	const comparisonRequest =
-		/\b(compare|comparison|difference|different|versus|vs\.?)\b/i
-			.test(message);
-
-	if (comparisonRequest) {
-		return `
-RESPONSE CONTRACT:
-This is a comparison.
-
-- Maximum 3 short sentences OR 2 compact bullet points.
-- Give each compared project only one sentence.
-- Focus only on the biggest differences.
-- Do not list every feature.
-- Do not turn this into a detailed project breakdown.
-`;
-	}
-
-
-	const detailedRequest =
-		/\b(detail|detailed|breakdown|architecture|step[- ]?by[- ]?step|how does|how did|how it works|technical explanation|technical depth|explain in depth|deep dive)\b/i
-			.test(message);
-
-	if (detailedRequest) {
-		return `
-RESPONSE CONTRACT:
-This is a detailed technical question, but the answer must remain compact.
-
-- Maximum 6 major steps or sections.
-- ONE sentence maximum per step.
-- Include only the most important architecture.
-- Combine closely related workflow stages.
-- No sub-bullets.
-- No long introduction.
-- No repeated conclusion.
-- Do not describe every node, field, or implementation detail unless specifically requested.
-`;
-	}
-
-
-	return `
-RESPONSE CONTRACT:
-Keep the answer compact.
-
-- Maximum 3 sentences.
-- Prefer 1-2 sentences.
-- Answer immediately.
-- Mention only information necessary to answer the question.
-`;
 }
 
 // --------------------------------------------------
@@ -926,77 +661,48 @@ Keep the answer compact.
 function getCorsHeaders(
 	request: Request,
 ): Record<string, string> {
-
 	const origin =
 		request.headers.get("Origin");
-
 
 	if (!origin) {
 		return {};
 	}
 
-
 	const workerOrigin =
 		new URL(request.url).origin;
-
 
 	const allowed =
 		origin === workerOrigin ||
 		ALLOWED_ORIGINS.includes(origin);
 
-
 	if (!allowed) {
 		return {};
 	}
 
-
 	return {
-		"Access-Control-Allow-Origin":
-			origin,
-
+		"Access-Control-Allow-Origin": origin,
 		"Access-Control-Allow-Methods":
 			"POST, OPTIONS",
-
 		"Access-Control-Allow-Headers":
 			"Content-Type",
-
-		"Vary":
-			"Origin",
+		Vary: "Origin",
 	};
 }
-
-
-// --------------------------------------------------
-// ORIGIN VALIDATION
-// --------------------------------------------------
 
 function isOriginAllowed(
 	request: Request,
 ): boolean {
-
 	const origin =
 		request.headers.get("Origin");
 
-
-	/*
-		Requests without an Origin header may come from:
-
-		- curl
-		- server-to-server clients
-		- API testing tools
-
-		CORS is a browser security mechanism, so those
-		requests are allowed through this specific check.
-	*/
-
+	// Requests without Origin may be curl, API tools,
+	// or server-to-server requests. CORS is a browser boundary.
 	if (!origin) {
 		return true;
 	}
 
-
 	const workerOrigin =
 		new URL(request.url).origin;
-
 
 	return (
 		origin === workerOrigin ||
