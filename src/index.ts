@@ -240,15 +240,21 @@ export default {
 
 				if (!isOriginAllowed(request)) {
 					return jsonError(
-						"Origin not allowed.",
-						403,
-						request,
-					);
-				}
-
-				return handleChatRequest(request, env);
+					"Origin not allowed.",
+					403,
+					request,
+				);
 			}
 
+			const rateLimitResponse =
+			await checkChatRateLimit(request, env);
+
+			if (rateLimitResponse) {
+				return rateLimitResponse;
+	}
+
+				return handleChatRequest(request, env);
+	}
 
 			// Everything except POST / OPTIONS
 			return new Response(
