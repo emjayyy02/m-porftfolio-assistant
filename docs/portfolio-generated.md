@@ -34,6 +34,64 @@ Type: React portfolio system
 Summary: A responsive React portfolio with centralized content, scalable project routes, accessible themes, and restrained motion.
 Technologies: React, TypeScript, Vite, Tailwind CSS, Motion
 
+## Skills & Capabilities
+
+### Frontend
+- HTML: Semantic page structure
+- CSS: Responsive interface styling
+- JavaScript: Browser logic and interaction
+- React: Component-based interfaces
+- TypeScript: Typed application code
+- Tailwind CSS: Utility-first interface systems
+- Vite: Frontend build tooling
+
+### Backend, Data & Deployment
+- Python: Scripts and automation logic
+- Supabase: Backend and database services
+- Cloudflare Workers: Serverless edge functions
+- Vercel: Frontend and serverless deployment
+
+### Automation
+- n8n: Workflow automation
+- Make: Visual automation and data workflows
+- Zapier: App-to-app workflows
+
+### AI / LLM Workflows
+- AI Agents: Agent-based AI workflows and automation
+- OpenAI: AI models and API integrations
+- Gemini API: Google AI model integrations
+- OpenRouter: Multi-model routing and integration
+- Groq API: Fast LLM inference integrations
+- Prompt Engineering: Task-focused model instructions
+
+### APIs & Data
+- HTTP: Web request fundamentals
+- Webhooks: Event-driven integrations
+- REST APIs: Service integration
+- JSON: Structured data exchange
+- Local Storage: Browser-side persistence
+
+### CRM & Operations
+- HubSpot: CRM, deals and sales automation
+- Airtable: Operational data and lightweight CRM
+- GoHighLevel: CRM and workflow familiarity
+
+### Business Tools
+- Google Sheets: Operational data and tracking
+- Gmail: Email workflow integration
+- Google Workspace: Collaborative business tools
+- Microsoft 365: Documents and productivity
+- Slack: Team alerts and workflow notifications
+
+### Design / Build Tools
+- Canva: Visual asset creation
+
+### Development Tools & Version Control
+- Git: Version control
+- GitHub: Source collaboration
+- Visual Studio Code: Code editing
+- npm: Package management
+
 ## Certifications
 
 ### In Practice: AI, Testing & Best Practices
@@ -46,3 +104,9 @@ Issued: Aug 2026
 Institution: Dr. Filemon C. Aguilar Memorial College of Las Piñas
 Period: 2025 — 2029
 Location: Las Piñas City, Philippines
+
+## Personal Context
+
+Age: 19
+Location: Las Piñas City, Philippines
+Current status: College student studying Information Systems
