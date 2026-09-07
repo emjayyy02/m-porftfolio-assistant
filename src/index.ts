@@ -9,6 +9,7 @@
 import { Env, ChatMessage } from "./types";
 
 import assistantRules from "../docs/assistant-rules.md";
+import portfolioGenerated from "../docs/portfolio-generated.md";
 import portfolioContext from "../docs/portfolio-context.md";
 
 // --------------------------------------------------
@@ -306,7 +307,10 @@ ${assistantRules}
 # CURRENT RESPONSE CONTRACT
 ${responseContract}
 
-# PORTFOLIO KNOWLEDGE
+# CURRENT PUBLIC PORTFOLIO FACTS
+${portfolioGenerated}
+
+# DEEPER APPROVED PORTFOLIO CONTEXT
 ${portfolioContext}
 
 # FINAL RESPONSE REMINDER
