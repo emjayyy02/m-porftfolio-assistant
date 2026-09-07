@@ -114,13 +114,18 @@ System instructions and portfolio knowledge stay on the Worker rather than in th
 
 Best evidence: modern web + AI integration, frontend/backend separation, streaming AI responses, API hardening, and reliability thinking.
 
-## Automation Agency Landing Page
+## NovaTech Solutions
 
-A responsive landing-page project built around an automation-focused business concept.
+A responsive automation-agency website focused on clear service positioning,
+conversion flow, and polished frontend interaction.
 
-Best evidence: frontend fundamentals, responsive layout, and business-oriented web presentation.
+This is a fictional frontend/business website project.
 
-This is primarily a web/frontend project rather than a workflow automation system.
+Best evidence:
+- responsive layout
+- frontend fundamentals
+- business-oriented web presentation
+- interaction and conversion-focused page structure
 
 ## Workflow Operations Manager
 
@@ -168,9 +173,13 @@ Important architecture:
 
 Best evidence: n8n automation, validation, business rules, routing, persistence, duplicate prevention, retries, integrations, and failure handling beyond a basic trigger-action workflow.
 
-## Support Ticket Router & Draft Reply
+## AI Support Operations Triage System
 
-An AI-assisted support workflow that processes customer support tickets using AI interpretation plus deterministic validation and routing.
+An AI-assisted support operations workflow that processes customer requests using
+AI interpretation plus deterministic validation, review, routing, and draft generation.
+
+Core flow:
+Classify → Validate → Review → Route → Draft
 
 AI classification can produce structured fields such as:
 - category
