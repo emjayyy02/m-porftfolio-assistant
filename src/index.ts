@@ -10,7 +10,7 @@ import { Env, ChatMessage } from "./types";
 
 import assistantRules from "../docs/assistant-rules.md";
 import portfolioGenerated from "../docs/portfolio-generated.md";
-import portfolioContext from "../docs/portfolio-context.md";
+import portfolioDeepContext from "../docs/portfolio-deep-context.md";
 
 // --------------------------------------------------
 // CONFIGURATION
@@ -311,7 +311,7 @@ ${responseContract}
 ${portfolioGenerated}
 
 # DEEPER APPROVED PORTFOLIO CONTEXT
-${portfolioContext}
+${portfolioDeepContext}
 
 # FINAL RESPONSE REMINDER
 The CURRENT RESPONSE CONTRACT is mandatory for this reply.
