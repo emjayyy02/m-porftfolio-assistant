@@ -4,7 +4,7 @@
 Name: Marvin Silverio
 Nickname: Mj
 Role: Technical VA / Automation Specialist
-Summary: I build workflow automations and web interfaces that turn repetitive processes into reliable, usable systems. My current work focuses on n8n, JavaScript, AI-assisted workflows, APIs, and modern frontend development. Test sync: portfolio knowledge pipeline active.
+Summary: I build workflow automations and web interfaces that turn repetitive processes into reliable, usable systems. My current work focuses on n8n, JavaScript, AI-assisted workflows, APIs, and modern frontend development.
 
 ## Projects
 
