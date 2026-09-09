@@ -8,6 +8,11 @@ Summary: I build workflow automations and web interfaces that turn repetitive pr
 
 ## Projects
 
+### Offangle
+Type: Valorant coaching landing page
+Summary: A responsive Valorant coaching landing page built around clear positioning, strong visual hierarchy, and a focused conversion path.
+Technologies: HTML, CSS, JavaScript
+
 ### AI Support Operations Triage System
 Type: AI-assisted workflow automation
 Summary: Structured AI interpretation surrounded by deterministic validation, review policy, routing, and failure handling.
