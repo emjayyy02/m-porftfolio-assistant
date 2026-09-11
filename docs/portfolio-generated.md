@@ -8,6 +8,12 @@ Summary: I build workflow automations and web interfaces that turn repetitive pr
 
 ## Projects
 
+### Revenue Recovery OS
+Type: Customer recovery operations system
+Summary: Connects customer signals to explainable risk, human-approved recovery actions, and confirmed outcomes in a secured read-only demo.
+Technologies: React, TypeScript, Cloudflare Workers, Supabase, n8n
+Featured: Yes
+
 ### Offangle
 Type: Valorant coaching landing page
 Summary: A responsive Valorant coaching landing page built around clear positioning, strong visual hierarchy, and a focused conversion path.
@@ -17,7 +23,6 @@ Technologies: HTML, CSS, JavaScript
 Type: AI-assisted workflow automation
 Summary: Structured AI interpretation surrounded by deterministic validation, review policy, routing, and failure handling.
 Technologies: n8n, JavaScript, OpenRouter, Google Sheets, Webhooks
-Featured: Yes
 
 ### Invoice Collections Automation
 Type: Finance workflow automation
